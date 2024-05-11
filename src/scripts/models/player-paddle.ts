@@ -1,3 +1,4 @@
+import { PADDLE_SPEED } from "../constants";
 import { Size } from "../types/size";
 import { InputHandler, Key } from "./../components/input-handler";
 import { Paddle } from "./paddle";
@@ -11,25 +12,25 @@ export class PlayerPaddle extends Paddle {
 	}
 
 	public update(deltaTime: number, screen: Size) {
-		if (this.enableMouse) {
-			this.bounds.y += ((InputHandler.mouse.y - this.bounds.height / 2) - this.bounds.y);
-			if (this.bounds.y < 0) {
-				this.bounds.y = 0;
-			} else if (this.bounds.y + this.bounds.height > screen.height) {
-				this.bounds.y = screen.height - this.bounds.height;
+		if (InputHandler.mouseDelta.x !== 0) {
+			this.bounds.x += ((InputHandler.mouse.x - this.bounds.width / 2) - this.bounds.x);
+			if (this.bounds.x < 0) {
+				this.bounds.x = 0;
+			} else if (this.bounds.x + this.bounds.width > screen.width) {
+				this.bounds.x = screen.width - this.bounds.width;
 			}
 		} else {
-			if (InputHandler.isKeyDown(Key.ArrowUp)) {
-				this.bounds.y -= this.speed * deltaTime;
-				if (this.bounds.y < 0) {
-					this.bounds.y = 0;
+			if (InputHandler.isKeyDown(Key.ArrowLeft)) {
+				this.bounds.x -= PADDLE_SPEED * deltaTime;
+				if (this.bounds.x < 0) {
+					this.bounds.x = 0;
 				}
 			}
 
-			if (InputHandler.isKeyDown(Key.ArrowDown)) {
-				this.bounds.y += this.speed * deltaTime;
-				if (this.bounds.y + this.bounds.height > screen.height) {
-					this.bounds.y = screen.height - this.bounds.height;
+			if (InputHandler.isKeyDown(Key.ArrowRight)) {
+				this.bounds.x += PADDLE_SPEED * deltaTime;
+				if (this.bounds.x + this.bounds.width > screen.width) {
+					this.bounds.x = screen.width - this.bounds.width;
 				}
 			}
 		}

@@ -52,6 +52,22 @@ export class Rectangle {
 		return new Vector(this.x + this.width / 2, this.y + this.height / 2);
 	}
 
+	get left(): number {
+		return this.x;
+	}
+
+	get right(): number {
+		return this.x + this.width;
+	}
+
+	get top(): number {
+		return this.y;
+	}
+
+	get bottom(): number {
+		return this.y + this.height;
+	}
+
 	public clone(): Rectangle {
 		return new Rectangle(this.x, this.y, this.width, this.height);
 	}

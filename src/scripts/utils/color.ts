@@ -1,4 +1,4 @@
-export class Color {
+export abstract class Color {
 
 	public static alpha(color: string, alpha: number): string {
 		let c = color;

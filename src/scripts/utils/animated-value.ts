@@ -5,8 +5,8 @@ export const Easings = {
 	smoothstep: (t: number) => t * t * (3 - 2 * t),
 };
 
-export class AnimatedValue {
-	
+export abstract class AnimatedValue {
+
 	private timer = 0;
 	private finished = false;
 

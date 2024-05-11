@@ -1,10 +1,16 @@
-export const PADDLE_WIDTH = 20;
-export const PADDLE_HEIGHT = 100;
-export const PADDLE_SPEED = 1.5;
-export const PADDLE_MARGIN = 10;
+export const PADDLE_WIDTH = 100;
+export const PADDLE_HEIGHT = 20;
+export const PADDLE_SPEED = 600.25;
+// export const PADDLE_SPEED = 1800.25;
+export const PADDLE_MARGIN = 15;
+
+export const BLOCK_ROWS = 8;
+export const BLOCK_WIDTH = 60;
+export const BLOCK_HEIGHT = 22.5;
+export const BLOCK_GAP = 15;
 
 export const BALL_RADIUS = 10;
-export const BALL_SPEED = 825;
+export const BALL_SPEED = 525;
 
 export const BALL_TIMER = 3.0;
 

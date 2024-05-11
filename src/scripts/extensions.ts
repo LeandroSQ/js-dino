@@ -142,7 +142,14 @@ Math.randomInt = function (min, max) {
 };
 
 Math.lerp = function (a, b, t) {
-	return a + (b - a) * t;
+	// Ease in-out function where t is timestep and not percentage
+	// t = t * t * (3 - 2 * t);
+
+	const diff = b - a;
+	if (diff > t) return a + t;
+	if (diff < -t) return a - t;
+
+	return a + diff;
 };
 
 Math.oscilate = function (time, cyclesPerSecond, minAmplitude, maxAmplitude) {

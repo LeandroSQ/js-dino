@@ -1,7 +1,7 @@
 {
-	"name": "js-pong",
+	"name": "js-breakout",
 	"version": "1.0.0",
-	"description": "Pong",
+	"description": "Breakout",
 	"main": "src/index.html",
 	"author": "LeandroSQ",
 	"license": "MIT",
@@ -12,7 +12,8 @@
 		"lint": "eslint ./src/scripts/**/*.ts"
 	},
 	"keywords": [
-		"Pong",
+		"Breakout",
+		"Atari"
 		"Tennis",
 		"Player vs COM",
 		"COM vs COM",

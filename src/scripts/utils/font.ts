@@ -1,6 +1,6 @@
 import { FONT_FAMILY, FONT_SIZE } from "../constants";
 
-export class FontUtils {
+export abstract class FontUtils {
 
 	static async setup() {
 		const font = `${FONT_SIZE}pt ${FONT_FAMILY}`;

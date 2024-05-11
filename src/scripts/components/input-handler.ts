@@ -145,7 +145,9 @@ export class InputHandler {
 	public static update() {
 		this.keysJustPressed = { };
 		this.mouseButtonsJustPressed = { };
-		this.mouseButtonsJustReleased = { };
+		this.mouseButtonsJustReleased = {  };
+		this.mouseDelta.x = 0;
+		this.mouseDelta.y = 0;
 		this.isDirty = false;
 	}
 

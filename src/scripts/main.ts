@@ -8,9 +8,9 @@ import { Gizmo } from "./utils/gizmo";
 import { Cursor } from "./utils/cursor";
 import { Theme } from "./utils/theme";
 import { AudioSynth } from "./utils/audio";
-import { BALL_RADIUS, MIDDLE_LINE_MARGIN, MIDDLE_CIRCLE_RADIUS, PADDLE_MARGIN } from "./constants";
-import { StateMenu } from "./states/state-menu";
+import { PADDLE_MARGIN } from "./constants";
 import { FontUtils } from "./utils/font";
+import { StateMenu } from "./states/state-menu";
 
 export class Main {
 
@@ -147,32 +147,6 @@ export class Main {
 		Gizmo.clear();
 
 		this.requestNextFrame();
-	}
-
-	public renderBoard() {
-		// Draw the middle dotted line
-		this.ctx.beginPath();
-		this.ctx.strokeStyle = Theme.secondary;
-		this.ctx.setLineDash([BALL_RADIUS, BALL_RADIUS * 2]);
-		this.ctx.lineWidth = BALL_RADIUS;
-		this.ctx.moveTo(this.canvas.width / 2, MIDDLE_LINE_MARGIN);
-		this.ctx.lineTo(this.canvas.width / 2, this.canvas.height / 2 - BALL_RADIUS * 4);
-		this.ctx.stroke();
-		this.ctx.beginPath();
-		this.ctx.moveTo(this.canvas.width / 2, this.canvas.height / 2 + BALL_RADIUS * 6);
-		this.ctx.lineTo(this.canvas.width / 2, this.canvas.height - MIDDLE_LINE_MARGIN);
-		this.ctx.stroke();
-
-		// Draw the middle circle
-		this.ctx.setLineDash([]);
-		this.ctx.beginPath();
-		this.ctx.rect(
-			this.canvas.width / 2 - MIDDLE_CIRCLE_RADIUS,
-			this.canvas.height / 2 - MIDDLE_CIRCLE_RADIUS,
-			MIDDLE_CIRCLE_RADIUS * 2,
-			MIDDLE_CIRCLE_RADIUS * 2
-		);
-		this.ctx.stroke();
 	}
 	// #endregion
 

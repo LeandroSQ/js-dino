@@ -1,7 +1,7 @@
 import { Color } from "./color";
 import { Log } from "./log";
 
-export class Theme {
+export abstract class Theme {
 
 	public static background: string;
 	public static foreground: string;
