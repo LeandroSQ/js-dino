@@ -13,10 +13,9 @@
 	},
 	"keywords": [
 		"Breakout",
-		"Atari"
-		"Tennis",
-		"Player vs COM",
-		"COM vs COM",
+		"Atari",
+		"Player",
+		"COM",
 		"Game",
 		"JavaScript",
 		"TypeScript",
