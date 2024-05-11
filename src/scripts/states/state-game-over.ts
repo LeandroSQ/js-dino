@@ -51,6 +51,10 @@ export class StateGameOver implements IState {
 			this.dimTimer += deltaTime;
 		}
 
+		if (InputHandler.isMouseButtonDown(MouseButton.Left)) {
+			this.main.setState(new StatePlay(this.main));
+		}
+
 		this.invalidate();
 	}
 
@@ -64,10 +68,6 @@ export class StateGameOver implements IState {
 		if (this.ball) {
 			this.ball.bounds.x = Math.clamp(this.ball.bounds.x, 0, this.width - this.ball.bounds.width);
 			this.ball.bounds.y = Math.clamp(this.ball.bounds.y, 0, this.height - this.ball.bounds.height);
-		}
-
-		if (InputHandler.isMouseButtonDown(MouseButton.Left)) {
-			this.main.setState(new StatePlay(this.main));
 		}
 
 		this.blockBuffer.setSize(this.width, this.height);
