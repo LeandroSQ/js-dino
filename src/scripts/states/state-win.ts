@@ -1,21 +1,23 @@
 import { InputHandler, MouseButton } from "../components/input-handler";
-import { FONT_SIZE, FONT_FAMILY, PADDLE_HEIGHT, PADDLE_MARGIN, PADDLE_WIDTH } from "../constants";
+import { FONT_SIZE, FONT_FAMILY } from "../constants";
 import { Main } from "../main";
-import { Ball } from "../models/ball";
-import { Paddle } from "../models/paddle";
+import { Vector } from "../models/vector";
 import { Color } from "../utils/color";
+import { Cursor } from "../utils/cursor";
+import { CursorType } from "../types/cursor-type";
 import { Theme } from "../utils/theme";
-import { IState } from "./state";
+import { AState } from "./state";
 import { StatePlay } from "./state-play";
 
-export class StateWin implements IState {
+export class StateWin extends AState {
 
 	private dimTimer = 0;
 
-	constructor(private paddle: Paddle, private ball: Ball, private main: Main) {  }
+	constructor(private main: Main) {
+		super();
+	}
 
 	// #region Utility
-
 	public get width() {
 		return this.main.canvas.width;
 	}
@@ -30,7 +32,8 @@ export class StateWin implements IState {
 	// #endregion
 
 	async setup() {
-		// Ignore
+		this.main.ball.velocity = Vector.zero;
+		Cursor.set(CursorType.Pointer);
 	}
 
 	async update(deltaTime: number) {
@@ -40,38 +43,23 @@ export class StateWin implements IState {
 			this.dimTimer += deltaTime;
 		}
 
-		this.invalidate();
-	}
-
-	resize() {
-		// TODO: Save the last screen size and reposition the paddle and ball relative to the new screen size
-		if (this.paddle) {
-			this.paddle.bounds.x = Math.clamp(this.paddle.bounds.x, 0, this.width - PADDLE_WIDTH);
-			this.paddle.bounds.y = this.height - PADDLE_HEIGHT - PADDLE_MARGIN;
-		}
-
-		if (this.ball) {
-			this.ball.bounds.x = Math.clamp(this.ball.bounds.x, 0, this.width - this.ball.bounds.width);
-			this.ball.bounds.y = Math.clamp(this.ball.bounds.y, 0, this.height - this.ball.bounds.height);
-		}
-
+		// Restart game on click
 		if (InputHandler.isMouseButtonDown(MouseButton.Left)) {
 			this.main.setState(new StatePlay(this.main));
 		}
+
+		this.invalidate();
+	}
+
+	preRender(ctx: CanvasRenderingContext2D): void {
+		const timer = Math.pow(1.0 - this.dimTimer, 4.0);
+		const dimAmount = Theme.isDark ? 0.15 : 0.25;
+
+		ctx.globalAlpha = dimAmount + (timer * (1.0 - dimAmount));
+		ctx.filter = "blur(5px)";
 	}
 
 	render(ctx: CanvasRenderingContext2D) {
-		this.main.canvas.clear();
-
-		ctx.save();
-		const timer = Math.pow(1.0 - this.dimTimer, 4.0);
-		const dimAmount = Theme.isDark ? 0.15 : 0.25;
-		ctx.globalAlpha = dimAmount + (timer * (1.0 - dimAmount));
-		ctx.filter = "blur(5px)";
-		this.paddle.render(ctx);
-		this.ball.render(ctx);
-		ctx.restore();
-
 		ctx.save();
 		ctx.globalAlpha = Math.pow(this.dimTimer, 2.0);
 		ctx.font = `${FONT_SIZE}pt ${FONT_FAMILY}`;

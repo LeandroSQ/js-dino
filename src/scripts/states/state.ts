@@ -1,11 +1,17 @@
-export interface IState {
+export abstract class AState {
 
-	setup(): Promise<void>;
+	setup(): Promise<void> {
+		return Promise.resolve();
+	}
 
-	update(deltaTime: number): Promise<void>;
+	abstract update(deltaTime: number);
 
-	resize();
+	preRender(ctx: CanvasRenderingContext2D) {
+		/* Ignore */
+	}
 
-	render(ctx: CanvasRenderingContext2D);
+	render(ctx: CanvasRenderingContext2D) {
+		/* Ignore */
+	}
 
 }

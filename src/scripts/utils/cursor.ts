@@ -1,7 +1,4 @@
-export enum CursorType {
-	Pointer = "pointer",
-	Default = "default",
-}
+import { CursorType } from "../types/cursor-type";
 
 export abstract class Cursor {
 
