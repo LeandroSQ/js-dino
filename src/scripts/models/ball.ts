@@ -1,44 +1,31 @@
-import { AUDIO_DURATION, AUDIO_BOUNCE_HZ, AUDIO_SCORE_HZ, AUDIO_TIMER_HZ, BALL_RADIUS, BALL_SPEED, BALL_TIMER, BLOCK_GAP } from "../constants";
+import { BALL_RADIUS, BALL_SPEED, BLOCK_GAP } from "../constants";
 import SETTINGS from "../settings";
 import { Rectangle } from "./rectangle";
 import { Vector } from "./vector";
-import { Size } from "./../types/size";
-import { Paddle } from "./paddle";
-import { AudioSynth } from "../utils/audio";
 import { Theme } from "../utils/theme";
-import { Block } from "./block";
 import { Color } from "../utils/color";
+import { Main } from "../main";
 
 export class Ball {
 
 	public bounds = new Rectangle(0, 0, BALL_RADIUS * 2, BALL_RADIUS * 2);
 	public velocity = new Vector(0, 0);
-	public timer = BALL_TIMER;
-	public lives = 3;// This could be better placed on the game state too
-	private lastTimer = 0;
-	private audioPitch = 0;
-	private timeSinceLastHit = 0;
 
-	constructor(screen: Size) {
+	constructor(public main: Main) {
 		this.bounds.position = Vector.zero;
 		this.velocity = Vector.zero;
-		this.reset(screen);
+		this.reset();
 	}
 
-	public reset(screen: Size) {
-		this.timer = BALL_TIMER;
-		this.bounds.x = screen.width / 2 - this.bounds.width / 2;
-		this.bounds.y = screen.height / 2 - this.bounds.height / 2 + BLOCK_GAP * 2;
-		this.lives = 3;
-		SETTINGS.DIFFICULTY = 1.0;
+	public reset() {
+		this.bounds.x = this.main.canvas.width / 2 - this.bounds.width / 2;
+		this.bounds.y = this.main.canvas.height / 2 - this.bounds.height / 2 + BLOCK_GAP * 2;
+		this.velocity = Vector.zero;
 	}
 
-	private playSound(hertz: number) {
-		AudioSynth.play(hertz, AUDIO_DURATION * (1.0 + Math.random() * 0.8 - 0.4));
-	}
+	private bounceOffScreenEdges() {
+		const screen = this.main.canvas.size;
 
-	private bounceOffWalls(screen: Size) {
-		// Bounce off screen edges
 		if (this.bounds.x < 0 && this.velocity.x < 0) {
 			this.bounds.x = 0;
 			this.velocity.x *= -1;
@@ -51,17 +38,13 @@ export class Ball {
 			this.bounds.y = 0;
 			this.velocity.y *= -1;
 		} else if (this.bounds.y + this.bounds.height > screen.height && this.velocity.y > 0) {
-			this.bounds.y = screen.height - this.bounds.height;
-			this.velocity.y *= -1;
-			const currentLives = this.lives;
-			this.reset(screen);
-			this.lives = currentLives - 1;
-			this.playSound(AUDIO_BOUNCE_HZ);
+			this.main.onBallBounceOffBottom();
 		}
 	}
 
-	private bounceOffBlocks(blocks: Array<Block>, screen: Size) {
-		// Bounce off blocks
+	private bounceOffBlocks() {
+		const blocks = this.main.blocks;
+
 		for (let i = blocks.length - 1; i >= 0; i--) {
 			const block = blocks[i];
 			if (this.bounds.intersects(block.bounds)) {
@@ -80,67 +63,46 @@ export class Ball {
 					this.bounds.x += min === left ? -BALL_RADIUS : BALL_RADIUS;
 				}
 
-				this.timeSinceLastHit = performance.now();
-				this.audioPitch += 0.25;
-				const pan = Math.min(1, Math.max(-1, (this.bounds.center.x - screen.width / 2) / (screen.width / 2)));
-				AudioSynth.play(AUDIO_SCORE_HZ * (1.0 + this.audioPitch), AUDIO_DURATION * (1.0 + Math.random() * 0.8 - 0.4), pan);
 				blocks.splice(i, 1);
-				SETTINGS.DIFFICULTY *= 1.01;
+
+				this.main.onBallBounceOffBlock();
 			}
 		}
-
-		if (performance.now() - this.timeSinceLastHit > 500) {
-			this.audioPitch = 0;
-		}
-
 	}
 
-	private bounceOffPaddle(paddle: Paddle) {
-		if (this.bounds.intersects(paddle.bounds)) {
+	public accelerateToRandomDirection() {
+		this.velocity = new Vector(
+			Math.random() < 0.5 ? -BALL_SPEED : BALL_SPEED,
+			BALL_SPEED
+		);
+	}
+
+	private bounceOffPaddle() {
+		if (this.bounds.intersects(this.main.paddle.bounds)) {
 			const isBallMovingTowardsPaddle = this.velocity.y > 0;
 			if (isBallMovingTowardsPaddle) {
 				this.velocity.y *= -1;
-				this.playSound(AUDIO_BOUNCE_HZ);
-				SETTINGS.DIFFICULTY *= 1.01;
+				this.main.onBallBounceOffPaddle();
 			}
 		}
 	}
 
-	private updateTimer(deltaTime: number) {
-		this.timer -= deltaTime;
-		if (this.timer <= 0) {
-			this.velocity = new Vector(
-				Math.random() < 0.5 ? -BALL_SPEED : BALL_SPEED,
-				BALL_SPEED
-			);
-		}
 
-		// Play sound countdown
-		if (Math.floor(this.timer) !== this.lastTimer) {
-			this.lastTimer = Math.floor(this.timer);
-			this.playSound(AUDIO_TIMER_HZ * (BALL_TIMER - this.timer + 1));
-		}
-	}
-
-	public update(deltaTime: number, screen: Size, paddle: Paddle, blocks: Array<Block>) {
-		if (this.timer > 0) {
-			this.updateTimer(deltaTime);
-
-			return;
-		}
-
+	public update(deltaTime: number) {
 		// Update velocity
 		this.bounds.x += this.velocity.x * SETTINGS.DIFFICULTY * deltaTime;
 		this.bounds.y += this.velocity.y * SETTINGS.DIFFICULTY * deltaTime;
 
-		this.bounceOffWalls(screen);
-		this.bounceOffPaddle(paddle);
-		this.bounceOffBlocks(blocks, screen);
+		this.bounceOffScreenEdges();
+		this.bounceOffPaddle();
+		this.bounceOffBlocks();
 	}
 
 	public render(ctx: CanvasRenderingContext2D) {
 		ctx.beginPath();
-		if (this.timer > 0) ctx.fillStyle = Color.alpha(Theme.foreground, Math.sin(this.timer * (Math.PI * 2) * 1.20) * 0.25 + 0.75);
+
+		// Blink when in preparation time
+		if (this.main.isInPreparationTime) ctx.fillStyle = Color.alpha(Theme.foreground, Math.sin(this.main.preparationTimer * (Math.PI * 2) * 1.20) * 0.25 + 0.75);
 		else ctx.fillStyle = Theme.foreground;
 
 		ctx.fillRect(this.bounds.x, this.bounds.y, this.bounds.width, this.bounds.height);
