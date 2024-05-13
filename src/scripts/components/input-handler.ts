@@ -22,6 +22,7 @@ type Dictionary<T> = { [key: string]: T };
 export class InputHandler {
 
 	public static isDirty = false;
+	public static anyInput = false;
 
 	// #region Keyboard
 	private static keys: Dictionary<boolean> = { };
@@ -43,6 +44,7 @@ export class InputHandler {
 		this.keysJustPressed[event.key] = true;
 
 		this.isDirty = true;
+		this.anyInput = true;
 	}
 
 	public static onKeyUp(event: KeyboardEvent) {
@@ -92,6 +94,7 @@ export class InputHandler {
 		this.mouseButtonsJustPressed[event.button] = true;
 
 		this.isDirty = true;
+		this.anyInput = true;
 	}
 
 	public static onMouseUp(event: MouseEvent) {
@@ -109,6 +112,7 @@ export class InputHandler {
 		element.setPointerCapture(event.pointerId);
 
 		this.isDirty = true;
+		this.anyInput = true;
 	}
 
 	public static onPointerUp(element: HTMLElement, event: PointerEvent) {
@@ -149,6 +153,7 @@ export class InputHandler {
 		this.mouseDelta.x = 0;
 		this.mouseDelta.y = 0;
 		this.isDirty = false;
+		this.anyInput = false;
 	}
 
 }

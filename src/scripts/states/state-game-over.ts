@@ -44,7 +44,7 @@ export class StateGameOver extends AState {
 		}
 
 		// Restart game on click
-		if (InputHandler.isMouseButtonDown(MouseButton.Left)) {
+		if (InputHandler.anyInput) {
 			this.main.setState(new StatePlay(this.main));
 		}
 
@@ -70,7 +70,7 @@ export class StateGameOver extends AState {
 		ctx.fillTextCentered("Game over!", this.width / 2, this.height / 2 - FONT_SIZE);
 		ctx.font = `${FONT_SIZE / 2}pt ${FONT_FAMILY}`;
 		ctx.fillStyle = Color.alpha(Theme.foreground, Math.oscilate(Date.now() / 1000.0, 0.5, 0.25, 1.0));
-		ctx.fillTextCentered("Click to restart", this.width / 2, this.height / 2);
+		ctx.fillTextCentered("Press to restart", this.width / 2, this.height / 2);
 		ctx.restore();
 	}
 
