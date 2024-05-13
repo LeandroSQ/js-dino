@@ -1,4 +1,4 @@
-import { AUDIO_VOLUME } from "../constants";
+import { AUDIO_DURATION, AUDIO_VOLUME } from "../constants";
 
 export abstract class AudioSynth {
 
@@ -69,6 +69,11 @@ export abstract class AudioSynth {
 
 		oscillator.start(now);
 		oscillator.stop(releaseTime);
+	}
+
+	public static async playWithDurationVariance(frequency: number, pan = 0) {
+		const duration = AUDIO_DURATION * (1.0 + Math.random() * 0.8 - 0.4);
+		this.play(frequency, duration, pan);
 	}
 
 }

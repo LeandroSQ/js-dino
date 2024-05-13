@@ -1,14 +1,17 @@
-import { Theme } from "../utils/theme";
+import { BLOCK_HEIGHT, BLOCK_WIDTH } from "../constants";
 import { Rectangle } from "./rectangle";
 
 export class Block {
 
+	public bounds: Rectangle;
+
 	constructor(
-		public column: number,
-		public row: number,
-		public bounds: Rectangle,
+		x: number,
+		y: number,
 		public color: string
-	) { }
+	) {
+		this.bounds = new Rectangle(x, y, BLOCK_WIDTH, BLOCK_HEIGHT);
+	}
 
 	render(ctx: CanvasRenderingContext2D) {
 		ctx.beginPath();

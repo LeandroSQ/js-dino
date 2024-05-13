@@ -1,4 +1,5 @@
 import { Rectangle } from "../models/rectangle";
+import { Size } from "../types/size";
 
 export class DensityCanvas {
 
@@ -125,6 +126,10 @@ export class DensityCanvas {
 
 	get bounds(): Rectangle {
 		return new Rectangle(0, 0, this.width, this.height);
+	}
+
+	get size(): Size {
+		return { width: this.width, height: this.height };
 	}
 	// #endregion
 
