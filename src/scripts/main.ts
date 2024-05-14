@@ -1,4 +1,6 @@
+/* eslint-disable max-statements */
 import "./extensions";
+import { Analytics } from "./models/analytics";
 import { Log } from "./utils/log";
 import { DensityCanvas } from "./components/density-canvas";
 import { InputHandler } from "./components/input-handler";
@@ -7,7 +9,7 @@ import { Gizmo } from "./utils/gizmo";
 import { Cursor } from "./utils/cursor";
 import { Theme } from "./utils/theme";
 import { AudioSynth } from "./utils/audio";
-import { AUDIO_SCORE_HZ, BALL_BOUNCE_SCALING, PREPARATION_TIME, BLOCK_GAP, BLOCK_HEIGHT, BLOCK_WIDTH, PADDLE_MARGIN, AUDIO_RESET_TIME, AUDIO_TIMER_HZ, AUDIO_BOUNCE_HZ, BALL_RADIUS } from "./constants";
+import { AUDIO_SCORE_HZ, BALL_BOUNCE_SCALING, PREPARATION_TIME, BLOCK_GAP, BLOCK_HEIGHT, BLOCK_WIDTH, PADDLE_MARGIN, AUDIO_RESET_TIME, AUDIO_TIMER_HZ, AUDIO_BOUNCE_HZ, BALL_RADIUS, PARTICLE_COUNT, PARTICLE_SPREAD, PARTICLE_SPEED } from "./constants";
 import { FontUtils } from "./utils/font";
 import { StateMenu } from "./states/state-menu";
 import { APaddle } from "./models/paddle";
@@ -15,6 +17,7 @@ import { Block } from "./models/block";
 import { Ball } from "./models/ball";
 import SETTINGS from "./settings";
 import { Vector } from "./models/vector";
+import { Particle } from "./models/particle";
 
 export class Main {
 
@@ -29,15 +32,17 @@ export class Main {
 	private lastFrameTime = performance.now();
 
 	// Misc
-	public state: AState = new StateMenu(this);
 	public globalTimer = 0;
+	private analytics: Analytics;
 
 	// Entities
 	public paddle: APaddle;
 	public blocks: Array<Block> = [];
 	public ball: Ball;
+	public particles: Array<Particle> = [];
 
 	// Game logic
+	public state: AState = new StateMenu(this);
 	public preparationTimer = PREPARATION_TIME;
 	public lives = 3;
 	private lastTimer = 0;
@@ -110,9 +115,20 @@ export class Main {
 		// Setup canvas
 		this.onResize();
 
-		await Theme.setup();
-		await AudioSynth.setup();
-		await FontUtils.setup();
+		// Load modules in parallel
+		const modules = [
+			Theme.setup(),
+			AudioSynth.setup(),
+			FontUtils.setup()
+		];
+
+		// Analytics profiler, only on DEBUG
+		if (DEBUG) {
+			this.analytics = new Analytics(this);
+			modules.push(this.analytics.setup());
+		}
+
+		await Promise.all(modules);
 
 		// Setup game state
 		await this.state.setup();
@@ -174,11 +190,15 @@ export class Main {
 	}
 
 	public onBallBounceOffPaddle() {
+		this.addParticleExplosion();
+
 		AudioSynth.playWithDurationVariance(AUDIO_BOUNCE_HZ);
 		SETTINGS.DIFFICULTY *= BALL_BOUNCE_SCALING;
 	}
 
 	public onBallBounceOffBlock() {
+		this.addParticleExplosion();
+
 		this.timeSinceLastHit = performance.now();
 		this.audioPitch += 0.25;
 		const pan = Math.min(1, Math.max(-1, (this.ball.bounds.center.x - screen.width / 2) / (screen.width / 2)));
@@ -218,6 +238,14 @@ export class Main {
 		this.handleAnimationFrameRequest = requestAnimationFrame(this.loop.bind(this));
 	}
 
+	public addParticleExplosion() {
+		for (let i = 0; i < PARTICLE_COUNT; i++) {
+			const position = Vector.random(PARTICLE_SPREAD).add(this.ball.bounds.center);
+			const velocity = Vector.random(PARTICLE_SPEED).add(this.ball.velocity.multiply(0.25));
+			this.particles.push(new Particle(position, velocity));
+		}
+	}
+
 	private updateTimers(time: DOMHighResTimeStamp, deltaTime: number) {
 		// Update bounce audio pitch
 		if (time - this.timeSinceLastHit > AUDIO_RESET_TIME) this.audioPitch = 0;
@@ -236,21 +264,57 @@ export class Main {
 
 			Gizmo.text(this.preparationTimer.toFixed(2), this.ball.bounds.center.add(new Vector(0, BALL_RADIUS * 4)), "red", "center");
 		}
+
+		if (DEBUG) this.analytics.update(deltaTime);
 	}
 
 	public updateEntities(deltaTime: number) {
 		this.updateTimers(performance.now(), deltaTime);
-		const substeps = 8;
+		const substeps = 4;
 		const subDeltaTime = deltaTime / substeps;
 		for (let i = 0; i < substeps; i++) {
 			this.ball.update(subDeltaTime);
 			this.paddle.update(subDeltaTime);
+			if (DEBUG) this.analytics.commitUpdate();
 		}
+
+		// Update particles
+		for (let i = this.particles.length - 1; i >= 0; i--) {
+			this.invalidate();
+			this.particles[i].update(deltaTime);
+			if (this.particles[i].duration <= 0) {
+				this.particles.splice(i, 1);
+			}
+		}
+	}
+
+	private renderEntities() {
+		this.canvas.clear();
+
+		// Render
+		this.canvas.context.save();
+		this.state.preRender(this.canvas.context);
+		this.blocksBuffer.drawTo(0, 0, this.canvas.context);
+		this.ball.render(this.canvas.context);
+		this.paddle.render(this.canvas.context);
+		this.canvas.context.restore();
+
+		// Render particles
+		for (const particle of this.particles) particle.render(this.canvas.context);
+
+		// State overlay
+		this.state.render(this.canvas.context);
+		this.isDirty = false;
+
+		// Render analytics
+		if (DEBUG) this.analytics.render(this.canvas.context);
 	}
 
 	private loop(time: DOMHighResTimeStamp) {
 		const deltaTime = (time - this.lastFrameTime) / 1000.0;
 		this.lastFrameTime = time;
+
+		if (DEBUG) this.analytics.startFrame(time);
 
 		this.state.update(deltaTime);
 		InputHandler.update();
@@ -266,23 +330,13 @@ export class Main {
 
 		// Redraw canvas, if needed
 		if (this.isDirty) {
-			this.canvas.clear();
-
-			// Render
-			this.canvas.context.save();
-			this.state.preRender(this.canvas.context);
-			this.blocksBuffer.drawTo(0, 0, this.canvas.context);
-			this.ball.render(this.canvas.context);
-			this.paddle.render(this.canvas.context);
-			this.canvas.context.restore();
-
-			// State overlay
-			this.state.render(this.canvas.context);
-			this.isDirty = false;
+			this.renderEntities();
 		}
 
 		Gizmo.render(this.canvas.context);
 		Gizmo.clear();
+
+		if (DEBUG) this.analytics.endFrame();
 
 		this.requestNextFrame();
 	}
