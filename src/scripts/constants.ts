@@ -1,6 +1,7 @@
 export const PADDLE_WIDTH = 100;
 export const PADDLE_HEIGHT = 20;
-export const PADDLE_SPEED = 840.34;
+export const PADDLE_ACCELERATION = 135.34;
+export const PADDLE_MAX_SPEED = 735.34;
 export const PADDLE_MARGIN = 15;
 
 export const BLOCK_ROWS = 8;
@@ -27,3 +28,10 @@ export const AUDIO_VOLUME = 0.2;
 export const AUDIO_SCORE_HZ = 220;
 export const AUDIO_TIMER_HZ = 110;
 export const AUDIO_RESET_TIME = 500;
+
+export const PARTICLE_TIME_TO_LIVE = 0.5;
+export const PARTICLE_COUNT = 50;
+export const PARTICLE_START_SIZE = 0;
+export const PARTICLE_END_SIZE = 2.5;
+export const PARTICLE_SPREAD = 5;
+export const PARTICLE_SPEED = 350;

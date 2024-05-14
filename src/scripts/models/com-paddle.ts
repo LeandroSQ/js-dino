@@ -1,19 +1,34 @@
-import { BALL_SPEED, PADDLE_SPEED } from "../constants";
+/* eslint-disable max-statements */
+import { BALL_RADIUS, BALL_SPEED, PADDLE_ACCELERATION, PADDLE_MAX_SPEED } from "../constants";
 import { APaddle } from "./paddle";
 import SETTINGS from "../settings";
 import { Gizmo } from "../utils/gizmo";
 import { Vector } from "./vector";
 import { Main } from "../main";
+import { Ray } from "./ray";
 
 export class COMPaddle extends APaddle {
+
+	private velocity = 0;
+	private acceleration = 0;
 
 	constructor(private main: Main) {
 		super(main.canvas.size);
 	}
 
 	private moveTo(deltaTime: number, target: number, speedMultiplier = 1.0) {
-		const speed = deltaTime * PADDLE_SPEED * SETTINGS.DIFFICULTY * speedMultiplier;
-		this.bounds.x = Math.clamp(Math.lerp(this.bounds.x, target, speed), 0, this.main.canvas.width - this.bounds.width);
+		/* const speed = deltaTime * PADDLE_SPEED * SETTINGS.DIFFICULTY * speedMultiplier;
+		this.bounds.x = Math.clamp(Math.lerp(this.bounds.x, target, speed), 0, this.main.canvas.width - this.bounds.width); */
+
+		// With acceleration
+		const distance = target - this.bounds.x;
+		const maxSpeed = PADDLE_ACCELERATION * SETTINGS.DIFFICULTY * speedMultiplier;
+		this.acceleration += distance * maxSpeed;
+
+		// Add penalty for changing direction or starting to move
+		if (Math.sign(this.velocity) !== Math.sign(this.acceleration) || Math.abs(this.velocity) <= Number.EPSILON) {
+			this.acceleration *= 0.15 * deltaTime;
+		}
 	}
 
 	private moveToCenter(deltaTime: number) {
@@ -31,40 +46,58 @@ export class COMPaddle extends APaddle {
 		this.moveTo(deltaTime, target, distance);
 	}
 
-	private predictBallTrajectory(deltaTime: number) {
-		Gizmo.text("predictBallTrajectory", this.bounds.center.add(new Vector(0, -20)), "red", "center");
-		// Predict the time it will take for the ball to reach the paddle
-		const predictedY = this.main.ball.bounds.y + this.main.ball.bounds.height;
-		const time = (this.bounds.y - predictedY) / BALL_SPEED;
-		let predictedX = this.main.ball.bounds.x + this.main.ball.velocity.x * time;
-
-		// The ball will bounce, so we need to calculate the new predicted position
-		for (let count = 0; (predictedX < 0 || predictedX + this.main.ball.bounds.width > this.main.canvas.width) && count < 10; count++) {
-			if (predictedX < 0) {
-				Gizmo.circle(new Vector(predictedX + this.main.ball.bounds.width, predictedY - this.main.ball.bounds.height / 2), this.main.ball.bounds.height / 2, "rgba(255, 0, 0, 0.25)");
-				predictedX = -predictedX;
-			}
-			if (predictedX + this.main.ball.bounds.width > this.main.canvas.width) {
-				Gizmo.circle(new Vector(this.main.canvas.width - this.main.ball.bounds.width, predictedY - this.main.ball.bounds.height / 2), this.main.ball.bounds.height / 2, "rgba(255, 0, 0, 0.25)");
-				predictedX = this.main.canvas.width - this.main.ball.bounds.width - (predictedX - this.main.canvas.width + this.main.ball.bounds.width);
+	private isThereAnyBlockBetweenPaddleAndBall() {
+		const ray = new Ray(this.bounds.center, this.main.ball.bounds.center.add(this.main.ball.velocity.multiply(0.25)));
+		for (const block of this.main.blocks) {
+			// Check if there is any block between the paddle and the ball
+			if (ray.intersects(block.bounds)) {
+				return true;
 			}
 		}
 
-		const target = predictedX - this.bounds.width / 2;
-		this.moveTo(deltaTime, target);
+		return false;
+	}
 
-		Gizmo.circle(this.bounds.center, 5, "red");
-		Gizmo.circle(new Vector(predictedX, predictedY), 5, "green");
-		Gizmo.line(this.main.ball.bounds.center, new Vector(predictedX, this.bounds.y), "green");
+	private predictBallTrajectory(deltaTime: number) {
+		Gizmo.text("predictBallTrajectory", this.bounds.center.add(new Vector(0, -20)), "red", "center");
+
+		const predictY = this.main.ball.bounds.y - BALL_RADIUS;
+		const timeToReach = Math.abs(this.bounds.y - predictY) / (BALL_SPEED * SETTINGS.DIFFICULTY);
+		let estimatedX = this.main.ball.bounds.x + this.main.ball.velocity.x * timeToReach;
+
+		// Check if the ball is going to hit the wall
+		if (estimatedX < 0) {
+			estimatedX = Math.abs(estimatedX);
+		} else if (estimatedX > this.main.canvas.width - this.main.ball.bounds.width) {
+			Gizmo.line(this.main.ball.bounds.center, new Vector(estimatedX, this.bounds.y), "magenta");
+			estimatedX = this.main.canvas.width - this.main.ball.bounds.width - (estimatedX - (this.main.canvas.width - this.main.ball.bounds.width));
+		}
+
+
+		Gizmo.line(this.main.ball.bounds.center, new Vector(estimatedX, this.bounds.y), "magenta");
+
+		estimatedX -= this.bounds.width / 2;
+
+		Gizmo.circle(new Vector(estimatedX, this.bounds.y), 15, "cyan");
+
+		this.moveTo(deltaTime, estimatedX);
+
 	}
 
 	public update(deltaTime: number) {
+		this.velocity += this.acceleration * 0.5 * deltaTime;
+		if (Math.abs(this.velocity) > PADDLE_MAX_SPEED) this.velocity = PADDLE_MAX_SPEED * Math.sign(this.velocity);
+		this.bounds.x += this.velocity * deltaTime;
+		this.velocity += this.acceleration * 0.5 * deltaTime;
+		this.velocity *= 0.9;
+		this.acceleration = 0;
 		if (this.main.isInPreparationTime) {
 			this.moveToCenter(deltaTime);
-		} else if (this.main.ball.bounds.y < this.main.canvas.height / 3 || this.main.ball.velocity.y < 0) {
-			this.chaseBall(deltaTime);
 		} else {
-			this.predictBallTrajectory(deltaTime);
+			// if (this.isThereAnyBlockBetweenPaddleAndBall())
+				// this.chaseBall(deltaTime);
+			// else
+				this.predictBallTrajectory(deltaTime);
 		}
 	}
 
