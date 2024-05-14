@@ -1,4 +1,4 @@
-import { PADDLE_SPEED } from "../constants";
+import { PADDLE_ACCELERATION } from "../constants";
 import { Main } from "../main";
 import { InputHandler, Key } from "./../components/input-handler";
 import { APaddle } from "./paddle";
@@ -19,14 +19,14 @@ export class PlayerPaddle extends APaddle {
 			}
 		} else {
 			if (InputHandler.isKeyDown(Key.ArrowLeft)) {
-				this.bounds.x -= PADDLE_SPEED * deltaTime;
+				this.bounds.x -= PADDLE_ACCELERATION * deltaTime;
 				if (this.bounds.x < 0) {
 					this.bounds.x = 0;
 				}
 			}
 
 			if (InputHandler.isKeyDown(Key.ArrowRight)) {
-				this.bounds.x += PADDLE_SPEED * deltaTime;
+				this.bounds.x += PADDLE_ACCELERATION * deltaTime;
 				if (this.bounds.x + this.bounds.width > this.main.canvas.width) {
 					this.bounds.x = this.main.canvas.width - this.bounds.width;
 				}

@@ -1,28 +1,56 @@
 /* eslint-disable max-statements */
+import { Optional } from "./../types/optional";
 import { Main } from "../main";
 import { Rectangle } from "./rectangle";
+import { Log } from "../utils/log";
+
 
 export class Analytics {
 
 	private readonly padding = 15;
 	private readonly lineHeight = 12;
-	private readonly maxEntries = 120;
+	private readonly maxEntries = 200;
+
+	private targetFPS = 60;
 
 	private lastFrameTime = 0;
+	private frameTimer = 0;
+	private frameCount = 0;
+	private updateCount = 0;
+	private fps = 0;
+	private ups = 0;
+
+	private currentMaxHeight = 1;
+	private targetMaxHeight = 1;
+
 	private chart: number[] = [];
 
 	constructor(private main: Main) { }
+
+	public async setup() {
+		try {
+			this.targetFPS = await window.getRefreshRate();
+			Log.info("Analytics", `Target FPS: ${this.targetFPS}`);
+		} catch (e) {
+			Log.warn("Analytics", "Failed to get refresh rate, defaulting to 60 FPS");
+		}
+	}
 
 	public clear() {
 		this.chart = [];
 	}
 
-	public startFrame() {
-		this.lastFrameTime = performance.now();
+	public commitUpdate() {
+		this.updateCount++;
+	}
+
+	public startFrame(time: Optional<DOMHighResTimeStamp> = null) {
+		this.lastFrameTime = time ?? performance.now();
 	}
 
 	public endFrame() {
 		const elapsed = performance.now() - this.lastFrameTime;
+		this.frameCount++;
 		this.chart.push(elapsed);
 
 		if (this.chart.length > this.maxEntries) {
@@ -30,12 +58,12 @@ export class Analytics {
 		}
 	}
 
-	private calculateBounds(screenWidth: number, screenHeight: number): Rectangle {
+	private calculateBounds(): Rectangle {
 		const padding = 15;
 		const width = 200;
 		const height = 100;
 
-		const x = screenWidth - width - padding;
+		const x = padding;
 		const y = padding;
 
 		return new Rectangle(x, y, width, height);
@@ -67,7 +95,7 @@ export class Analytics {
 
 		// Render the values
 		ctx.textAlign = "left";
-		ctx.fillText(`FPS: ${this.main.fps} / ${this.main.ups}`, x, y);
+		ctx.fillText(`FPS: ${this.fps} / ${this.ups}`, x, y);
 		y += this.lineHeight;
 		ctx.fillText(`Average: ${average.toFixed(2)}`, x, y);
 		y += this.lineHeight;
@@ -113,13 +141,26 @@ export class Analytics {
 		ctx.stroke();
 	}
 
+	public update(deltaTime: number) {
+		this.frameTimer += deltaTime;
+		if (this.frameTimer >= 1.0) {
+			this.frameTimer -= 1.0;
+			this.fps = this.frameCount;
+			this.ups = this.updateCount;
+			this.frameCount = 0;
+			this.updateCount = 0;
+		}
+
+		this.currentMaxHeight = Math.lerp(this.currentMaxHeight, this.targetMaxHeight, deltaTime);
+	}
+
 	public render(ctx: CanvasRenderingContext2D) {
-		const bounds = this.calculateBounds(ctx.canvas.width, ctx.canvas.height);
+		const bounds = this.calculateBounds();
 
 		this.renderBackground(ctx, bounds);
 
 		// Calculate the max and average frame time
-		const targetFrameTime = 1000 / this.main.targetFPS;
+		const targetFrameTime = 1000 / this.targetFPS;
 		let maxFrameTime = 0;
 		let totalFrameTime = 0;
 		let last = 0;
@@ -129,12 +170,13 @@ export class Analytics {
 			last = entry;
 		}
 		const averageFrameTime = totalFrameTime / this.chart.length;
+		this.targetMaxHeight = maxFrameTime;
 
 		this.renderDebugOverlay(ctx, bounds, averageFrameTime, maxFrameTime, last);
 
 		if (this.chart.length < 2) return;
 
-		this.renderChart(ctx, bounds, maxFrameTime, targetFrameTime);
+		this.renderChart(ctx, bounds, this.currentMaxHeight, targetFrameTime);
 	}
 
 }

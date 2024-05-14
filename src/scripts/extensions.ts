@@ -1,3 +1,4 @@
+/* eslint-disable max-nested-callbacks */
 import { Main } from "./main";
 
 // Signatures
@@ -7,6 +8,9 @@ declare global {
 		_instance: Main;
 		addLoadEventListener: (listener: () => void) => void;
 		addVisibilityChangeEventListener: (listener: (isVisible: boolean) => void) => void;
+		isDocumentHidden: () => boolean;
+		isMobile: () => boolean;
+		getRefreshRate: () => Promise<number>;
 	}
 
 	interface HTMLCanvasElement {
@@ -37,6 +41,12 @@ declare global {
 		fillTextCentered(text: string, x: number, y: number): void;
 	}
 
+	interface Function {
+		oneshot: (predicate: VoidFunction) => VoidFunction;
+		timeout: (predicate: VoidFunction, amount: number) => VoidFunction;
+		debounce: (predicate: VoidFunction, amount: number) => VoidFunction;
+	}
+
 	interface PromiseConstructor {
 		delay: (ms: number) => Promise<void>;
 	}
@@ -47,43 +57,58 @@ declare global {
 
 // Definitions
 window.addLoadEventListener = function (listener) {
-	let fired = false;
+	const callback = Function.oneshot(listener);
 
-	const _func = () => {
-		if (fired) return;
-		fired = true;
-
-		listener();
-	};
-
-	window.addEventListener("DOMContentLoaded", _func);
-	window.addEventListener("load", _func);
-	document.addEventListener("load", _func);
-	window.addEventListener("ready", _func);
-	setTimeout(_func, 1000);
+	window.addEventListener("DOMContentLoaded", callback);
+	window.addEventListener("load", callback);
+	document.addEventListener("load", callback);
+	window.addEventListener("ready", callback);
+	setTimeout(callback, 1000);
 };
 
 window.addVisibilityChangeEventListener = function (listener) {
 	const prefixes = ["webkit", "moz", "ms", ""];
 
-	let fired = false;
+	const callback = Function.debounce(() => {
+		listener(window.isDocumentHidden());
+	}, 50);
 
-	const _func = () => {
-		if (fired) return;
-		fired = true;
+	prefixes.forEach(prefix => {
+		document.addEventListener(`${prefix}visibilitychange`, callback);
+	});
+	document.onvisibilitychange = callback;
+};
 
-		const isDocumentHidden = prefixes
-			.map((x) => (x && x.length > 0 ? `${x}Hidden` : "hidden"))
-			.map((x) => document[x]).reduce((a, b) => a || b, false);
+window.isMobile = function () {
+	return window.matchMedia("(any-pointer: coarse)").matches;
+};
+
+window.isDocumentHidden = function () {
+	const prefixes = ["webkit", "moz", "ms", ""];
+
+	return prefixes
+		.map((x) => (x && x.length > 0 ? `${x}Hidden` : "hidden"))
+		.map((x) => document[x]).reduce((a, b) => a || b, false);
+};
+
+window.getRefreshRate = function () {
+	return new Promise((resolve, _reject) => {
+		const knownRefreshRates = [60, 75, 100, 120, 144, 165, 240, 360];
 
 		setTimeout(() => {
-			listener(!isDocumentHidden);
-			fired = false;
-		}, 0);
-	};
+			requestAnimationFrame(start => {
+				requestAnimationFrame(end => {
+					const elapsed = end - start;
+					const rate = 1000 / elapsed;
 
-	for (const prefix of prefixes) document.addEventListener(`${prefix}visibilitychange`, _func);
-	document.onvisibilitychange = _func;
+					// Get the closest known refresh rate
+					const closest = knownRefreshRates.reduce((a, b) => Math.abs(b - rate) < Math.abs(a - rate) ? b : a);
+
+					resolve(closest);
+				});
+			});
+		}, 0);
+	});
 };
 
 HTMLCanvasElement.prototype.screenshot = function (filename = "download.png") {
@@ -142,14 +167,13 @@ Math.randomInt = function (min, max) {
 };
 
 Math.lerp = function (a, b, t) {
-	// Ease in-out function where t is timestep and not percentage
-	// t = t * t * (3 - 2 * t);
-
-	const diff = b - a;
+	/* const diff = b - a;
 	if (diff > t) return a + t;
 	if (diff < -t) return a - t;
 
-	return a + diff;
+	return a + diff; */
+
+	return a + (b - a) * t;
 };
 
 Math.oscilate = function (time, cyclesPerSecond, minAmplitude, maxAmplitude) {
@@ -183,6 +207,51 @@ CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2) {
 CanvasRenderingContext2D.prototype.fillTextCentered = function(text, x, y) {
 	const metrics = this.measureText(text);
 	this.fillText(text, x - metrics.width / 2, y);
+};
+
+Function.oneshot = function (predicate) {
+	let fired = false;
+
+	const wrapper = () => {
+		if (fired) return;
+		fired = true;
+
+		predicate();
+	};
+
+	return wrapper;
+};
+
+Function.timeout = function (predicate, amount) {
+	let fired = false;
+
+	const wrapper = () => {
+		if (fired) return;
+		fired = true;
+
+		setTimeout(() => {
+			predicate();
+			fired = false;
+		}, amount);
+	};
+
+	return wrapper;
+};
+
+Function.debounce = function (predicate, amount) {
+	let fired = false;
+
+	const wrapper = () => {
+		if (fired) return;
+		fired = true;
+
+		setTimeout(() => {
+			predicate();
+			fired = false;
+		}, amount);
+	};
+
+	return wrapper;
 };
 
 Promise.delay = function (amount) {

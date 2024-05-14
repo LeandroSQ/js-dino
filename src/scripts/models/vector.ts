@@ -44,6 +44,10 @@ export class Vector {
 		return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 	}
 
+	public static random(scalar: number): Vector {
+		return new Vector(Math.random() * 2 - 1, Math.random() * 2 - 1).normalize().multiply(scalar);
+	}
+
 	public get length(): number {
 		return Math.sqrt(this.x * this.x + this.y * this.y);
 	}
