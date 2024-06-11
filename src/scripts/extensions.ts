@@ -1,7 +1,8 @@
 /* eslint-disable max-nested-callbacks */
 import { Main } from "./main";
+import { TextAlign } from "./types/text-align";
+import { Sprite, SpriteSheet } from "./utils/spritesheet";
 
-// Signatures
 declare global {
 
 	interface Window {
@@ -32,13 +33,16 @@ declare global {
 		distance: (x1: number, y1: number, x2: number, y2: number) => number;
 		randomInt: (min: number, max: number) => number;
 		lerp: (a: number, b: number, t: number) => number;
-		oscilate: (time: number, cyclesPerSecond: number, minAmplitude: number, maxAmplitude: number) => number;
+		oscilate: (time: number, cyclesPerSecond: number, minAmplitude?: number, maxAmplitude?: number) => number;
+		smoothstep: (x: number, min?: number, max?: number) => number;
+		prettifyElapsedTime: (millis: number) => string;
 	}
 
 	interface CanvasRenderingContext2D {
 		clear: () => void;
 		line: (x1: number, y1: number, x2: number, y2: number) => void;
-		fillTextCentered(text: string, x: number, y: number): void;
+		fillTextAligned(text: string, x: number, y: number, alignment: TextAlign): void;
+		drawSprite(sprite: Sprite, x: number, y: number, width?: number, height?: number): void;
 	}
 
 	interface Function {
@@ -70,7 +74,7 @@ window.addVisibilityChangeEventListener = function (listener) {
 	const prefixes = ["webkit", "moz", "ms", ""];
 
 	const callback = Function.debounce(() => {
-		listener(window.isDocumentHidden());
+		listener(!window.isDocumentHidden());
 	}, 50);
 
 	prefixes.forEach(prefix => {
@@ -176,7 +180,7 @@ Math.lerp = function (a, b, t) {
 	return a + (b - a) * t;
 };
 
-Math.oscilate = function (time, cyclesPerSecond, minAmplitude, maxAmplitude) {
+Math.oscilate = function (time, cyclesPerSecond, minAmplitude = 0.0, maxAmplitude = 1.0) {
 	// Calculate the angular frequency (in radians per second)
 	const angularFrequency = 2 * Math.PI * cyclesPerSecond;
 
@@ -193,6 +197,28 @@ Math.oscilate = function (time, cyclesPerSecond, minAmplitude, maxAmplitude) {
 	return amplitude;
 };
 
+Math.smoothstep = function (x, min = 0, max = 1) {
+	// Scale, bias and saturate x to 0..1 range
+	// eslint-disable-next-line no-param-reassign
+	x = Math.clamp((x - min) / (max - min), 0, 1);
+
+	// Evaluate polynomial
+	return x * x * (3 - 2 * x);
+};
+
+Math.prettifyElapsedTime = function (ms) {
+	const toFixed = (value, digits) => {
+		if (value % 1 === 0) return Math.floor(value);
+		else return value.toFixed(digits);
+	};
+
+	if (ms < 1) return `${Math.floor(ms * 1000)}μs`;
+	if (ms < 1000) return `${toFixed(ms, 2)}ms`;
+	if (ms < 60000) return `${toFixed((ms / 1000), 2)}s`;
+	if (ms < 3600000) return `${toFixed((ms / 60000), 2)}m`;
+	else return `${toFixed((ms / 3600000), 2)}h`;
+};
+
 CanvasRenderingContext2D.prototype.clear = function () {
 	this.clearRect(0, 0, this.canvas.width, this.canvas.height);
 };
@@ -204,9 +230,34 @@ CanvasRenderingContext2D.prototype.line = function (x1, y1, x2, y2) {
 	this.stroke();
 };
 
-CanvasRenderingContext2D.prototype.fillTextCentered = function(text, x, y) {
+CanvasRenderingContext2D.prototype.fillTextAligned = function (text, x, y, alignment) {
 	const metrics = this.measureText(text);
-	this.fillText(text, x - metrics.width / 2, y);
+
+	switch (alignment) {
+		case TextAlign.Left:
+			this.fillText(text, x, y);
+			break;
+		case TextAlign.Center:
+			this.fillText(text, x - metrics.width / 2, y);
+			break;
+		case TextAlign.Right:
+			this.fillText(text, x - metrics.width, y);
+			break;
+	}
+};
+
+CanvasRenderingContext2D.prototype.drawSprite = function (sprite, x, y, width = undefined, height = undefined) {
+	this.drawImage(
+		SpriteSheet.source,
+		sprite.x,
+		sprite.y,
+		sprite.width,
+		sprite.height,
+		x,
+		y,
+		width || sprite.width,
+		height || sprite.height
+	);
 };
 
 Function.oneshot = function (predicate) {

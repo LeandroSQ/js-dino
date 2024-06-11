@@ -56,7 +56,7 @@ const esbuildOptions = {
 	target: [
 		"es2015",
 		"chrome58",
-		"edge16",
+		"edge18",
 		"firefox57",
 		"node12",
 		"safari11"

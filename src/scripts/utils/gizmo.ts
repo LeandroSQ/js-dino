@@ -50,15 +50,17 @@ class LineGizmo implements IGizmo {
 
 class CircleGizmo implements IGizmo {
 
-	constructor(private center: Vector, private radius: number, private color: string) { }
+	constructor(private center: Vector, private radius: number, private color: string, private fill: boolean) { }
 
 	public render(ctx: CanvasRenderingContext2D) {
-		ctx.fillStyle = this.color;
+		if (this.fill) ctx.fillStyle = this.color;
+		else ctx.strokeStyle = this.color;
 		ctx.lineWidth = 1;
 
 		ctx.beginPath();
 		ctx.arc(this.center.x, this.center.y, this.radius, 0, Math.PI * 2);
-		ctx.fill();
+		if (this.fill) ctx.fill();
+		else ctx.stroke();
 	}
 
 }
@@ -138,9 +140,9 @@ export class Gizmo {
 	static render(ctx: CanvasRenderingContext2D) {
 		if (!DEBUG) return;
 
-		for (const gizmo of Gizmo.list) {
-			gizmo.render(ctx);
-		}
+		ctx.save();
+		for (const gizmo of Gizmo.list) gizmo.render(ctx);
+		ctx.restore();
 	}
 
 	static clear() {
@@ -167,10 +169,10 @@ export class Gizmo {
 		Gizmo.list.push(new LineGizmo(start, end, color, thickness));
 	}
 
-	static circle(center: Vector, radius: number, color = "#fff") {
+	static circle(center: Vector, radius: number, color = "#fff", fill = true) {
 		if (!DEBUG) return;
 
-		Gizmo.list.push(new CircleGizmo(center, radius, color));
+		Gizmo.list.push(new CircleGizmo(center, radius, color, fill));
 	}
 
 	static text(text: string, position: Vector, color = "#fff", alignment: CanvasTextAlign = "left") {

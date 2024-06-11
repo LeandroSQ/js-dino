@@ -3,11 +3,13 @@ import { Optional } from "./../types/optional";
 import { Main } from "../main";
 import { Rectangle } from "./rectangle";
 import { Log } from "../utils/log";
+import { Theme } from "../utils/theme";
+import { FONT_FAMILY, FONT_SIZE } from "../constants";
 
 
 export class Analytics {
 
-	private readonly padding = 15;
+	private readonly padding = 10;
 	private readonly lineHeight = 12;
 	private readonly maxEntries = 200;
 
@@ -40,7 +42,7 @@ export class Analytics {
 		this.chart = [];
 	}
 
-	public commitUpdate() {
+	public endUpdate() {
 		this.updateCount++;
 	}
 
@@ -61,7 +63,7 @@ export class Analytics {
 	private calculateBounds(): Rectangle {
 		const padding = 15;
 		const width = 200;
-		const height = 100;
+		const height = 125;
 
 		const x = padding;
 		const y = padding;
@@ -70,38 +72,44 @@ export class Analytics {
 	}
 
 	private renderBackground(ctx: CanvasRenderingContext2D, bounds: Rectangle) {
-		ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
-		ctx.strokeStyle = "rgba(0, 0, 0, 0.75)";
+		ctx.fillStyle = Theme.containerBackground;
+		ctx.strokeStyle = Theme.containerBorder;
 		ctx.lineWidth = 0.5;
 
+		ctx.save();
 		ctx.beginPath();
-		ctx.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+		ctx.shadowColor = Theme.containerShadow;
+		ctx.shadowBlur = 25;
+		ctx.roundRect(bounds.x, bounds.y, bounds.width, bounds.height, 10);
 		ctx.fill();
 		ctx.stroke();
+		ctx.restore();
 	}
 
 	private renderDebugOverlay(ctx: CanvasRenderingContext2D, bounds: Rectangle, average: number, max: number, last: number) {
-		const x = bounds.x + this.padding / 2;
-		let y = bounds.y + this.padding / 2;
+		const x = bounds.x + this.padding;
+		let y = bounds.y + this.padding;
 
-		ctx.fillStyle = "#FFF";
-		ctx.font = `${this.lineHeight}px Arial`;
+		ctx.fillStyle = Theme.foreground;
+		ctx.font = `${FONT_SIZE * 0.25}px ${FONT_FAMILY}`;
 		ctx.textBaseline = "top";
 
 		// Render the title
 		ctx.textAlign = "center";
 		ctx.fillText("Analytics", bounds.x + bounds.width / 2, y);
-		y += this.lineHeight ;
+		y += this.lineHeight + this.padding / 2;
 
 		// Render the values
 		ctx.textAlign = "left";
-		ctx.fillText(`FPS: ${this.fps} / ${this.ups}`, x, y);
+		ctx.fillText(`FPS: ${this.fps} real / ${Math.floor(1000.0 / max)} max est.`, x, y);
 		y += this.lineHeight;
-		ctx.fillText(`Average: ${average.toFixed(2)}`, x, y);
+		ctx.fillText(`UPS: ${this.ups}`, x, y);
 		y += this.lineHeight;
-		ctx.fillText(`Max: ${max.toFixed(2)}`, x, y);
+		ctx.fillText(`Average: ${Math.prettifyElapsedTime(average)}`, x, y);
 		y += this.lineHeight;
-		ctx.fillText(`Last: ${last.toFixed(2)}`, x, y);
+		ctx.fillText(`Max: ${Math.prettifyElapsedTime(max)}`, x, y);
+		y += this.lineHeight;
+		ctx.fillText(`Last: ${Math.prettifyElapsedTime(last)}`, x, y);
 		y += this.lineHeight;
 	}
 
@@ -113,7 +121,7 @@ export class Analytics {
 		const spacing = width / this.maxEntries;
 
 		// Render the chart
-		ctx.strokeStyle = "#FFF";
+		ctx.strokeStyle = Theme.secondary;
 		ctx.beginPath();
 		const logMax = Math.max(max, 0);
 		for (let i = 0; i < this.chart.length; i++) {
@@ -146,8 +154,8 @@ export class Analytics {
 		if (this.frameTimer >= 1.0) {
 			this.frameTimer -= 1.0;
 			this.fps = this.frameCount;
-			this.ups = this.updateCount;
 			this.frameCount = 0;
+			this.ups = this.updateCount;
 			this.updateCount = 0;
 		}
 
@@ -155,6 +163,8 @@ export class Analytics {
 	}
 
 	public render(ctx: CanvasRenderingContext2D) {
+		ctx.save();
+
 		const bounds = this.calculateBounds();
 
 		this.renderBackground(ctx, bounds);
@@ -175,8 +185,9 @@ export class Analytics {
 		this.renderDebugOverlay(ctx, bounds, averageFrameTime, maxFrameTime, last);
 
 		if (this.chart.length < 2) return;
-
 		this.renderChart(ctx, bounds, this.currentMaxHeight, targetFrameTime);
+
+		ctx.restore();
 	}
 
 }

@@ -1,79 +1,52 @@
-import { AUDIO_DURATION, AUDIO_VOLUME } from "../constants";
+import { Log } from "./log";
+import { SoundFX } from "../types/soundfx";
+import { AUDIO_VOLUME } from "../constants";
 
-export abstract class AudioSynth {
+export abstract class AudioUtils {
 
-	private static context: AudioContext;
-	private static master: GainNode;
+	private static readonly cache = new Map<string, HTMLAudioElement>();
+
+	private static load(id: SoundFX): Promise<HTMLAudioElement> {
+		return new Promise((resolve, reject) => {
+			if (this.cache.has(id)) {
+				const value = this.cache.get(id);
+				if (!value) throw new Error("Unexpected undefined value in cache");
+
+				return resolve(value);
+			}
+
+			const audio = new Audio();
+			audio.src = `${window.location.href}/assets/audio/${id}.mp3`;
+			audio.crossOrigin = "anonymous";
+			audio.volume = AUDIO_VOLUME;
+			audio.id = `audio-${id}`;
+
+			audio.onerror = (e) => {
+				Log.error("AudioUtils", `Failed to load audio: ${id}`, e.toString());
+				reject(e);
+			};
+			audio.oncanplay = () => {
+				this.cache.set(id, audio);
+				resolve(audio);
+			};
+		});
+	}
 
 	public static async setup() {
-		this.context = new AudioContext();
-		this.master = this.context.createGain();
-		this.master.connect(this.context.destination);
-		this.master.gain.setValueAtTime(AUDIO_VOLUME, this.context.currentTime);
+		await Promise.all([
+			this.load(SoundFX.Jump),
+			this.load(SoundFX.GameOver),
+			this.load(SoundFX.Score),
+			this.load(SoundFX.Phase),
+		]);
 	}
 
-	private static async resume() {
-		if (this.context.state === "suspended" || this.context.state === "interrupted") {
-			await this.context.resume();
-		} else if (this.context.state === "closed") {
-			await this.setup();
+	public static play(id: SoundFX) {
+		const audio = this.cache.get(id);
+		if (audio === undefined) throw new Error(`Audio not found: ${id}`);
 
-			return true;
-		}
-
-		return false;
-	}
-
-	// eslint-disable-next-line max-statements
-	public static async play(frequency: number, duration: number, pan = 0) {
-		if (await this.resume()) return;
-
-		const gain = this.context.createGain();
-		gain.connect(this.master);
-
-		const panning = this.context.createStereoPanner();
-		panning.connect(gain);
-		panning.pan.setValueAtTime(pan, this.context.currentTime);
-
-		const oscillator = this.context.createOscillator();
-		oscillator.connect(panning);
-		oscillator.type = "square";
-		oscillator.frequency.setValueAtTime(frequency, this.context.currentTime);
-
-		// Envelope
-		const attack = 0.01;
-		const decay = 0.1;
-		const sustain = 0.4;
-		const release = 0.1;
-		const now = this.context.currentTime;
-		const length = duration / 1000;
-
-		// Calculate the timings
-		const attackTime = now + attack * length;
-		const decayTime = attackTime + decay * length;
-		const sustainTime = decayTime + sustain * length;
-		const releaseTime = sustainTime + release * length;
-
-		// Set the gain values, preventing clicks
-		gain.gain.setValueAtTime(0.0, now);
-		gain.gain.linearRampToValueAtTime(AUDIO_VOLUME, attackTime);
-		gain.gain.linearRampToValueAtTime(0.8 * AUDIO_VOLUME, decayTime);
-		gain.gain.linearRampToValueAtTime(0.8 * AUDIO_VOLUME, sustainTime);
-		gain.gain.linearRampToValueAtTime(0.0, releaseTime);
-
-		oscillator.addEventListener("ended", () => {
-			oscillator.disconnect();
-			panning.disconnect();
-			gain.disconnect();
-		});
-
-		oscillator.start(now);
-		oscillator.stop(releaseTime);
-	}
-
-	public static async playWithDurationVariance(frequency: number, pan = 0) {
-		const duration = AUDIO_DURATION * (1.0 + Math.random() * 0.8 - 0.4);
-		this.play(frequency, duration, pan);
+		audio.currentTime = 0;
+		audio.play();
 	}
 
 }

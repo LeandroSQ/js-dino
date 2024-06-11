@@ -1,4 +1,4 @@
-type EnumType = { [key: string]: any };
+type EnumType = { [key: string]: never };
 
 export abstract class EnumUtils {
 

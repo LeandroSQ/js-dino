@@ -1,7 +1,7 @@
 {
-	"name": "js-breakout",
+	"name": "js-dino",
 	"version": "1.0.0",
-	"description": "Breakout",
+	"description": "Dino",
 	"main": "src/index.html",
 	"author": "LeandroSQ",
 	"license": "MIT",
@@ -9,11 +9,12 @@
 	"scripts": {
 		"build": "gulp build --prod",
 		"dev": "gulp dev --dev",
+		"start": "gulp dev --prod",
 		"lint": "eslint ./src/scripts/**/*.ts"
 	},
 	"keywords": [
-		"Breakout",
-		"Atari",
+		"Dino",
+		"Chrome",
 		"Player",
 		"COM",
 		"Game",
