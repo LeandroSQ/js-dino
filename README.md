@@ -25,7 +25,7 @@ It is a simple implementation of the Chromium dinosaur game, with some minor cha
   - [x] High score system
 - [x] Game over screen
 - [ ] Pause screen
-- [ ] AI mode
+- [x] AI mode
 - [x] Sound effects
 - [x] Mobile support
   - [X] No pterodactyls due to no crouching
@@ -53,6 +53,7 @@ Jump over the obstacles and try to get the highest score possible!
 | -- | -- | -- |
 | <kbd>Arrow up</kbd> | <img src=".github/images/Arrow_Up_Key_Dark.png" align="center" height="32"> | Jump |
 | <kbd>Arrow down</kbd> | <img src=".github/images/Arrow_Up_Key_Dark.png" align="center" height="32"> | Duck/Crouch |
+| <kbd>A</kbd> | <img src=".github/images/A_Key_Dark.png" align="center" height="32"> | Toggle AI |
 
 ### Mouse
 
@@ -60,6 +61,7 @@ Jump over the obstacles and try to get the highest score possible!
 | -- | -- | -- |
 | <kbd>Left click</kbd> | <img src=".github/images/Mouse_Left_Key_Dark.png" align="center" height="32"> | Jump |
 | <kbd>Right click</kbd> | <img src=".github/images/Mouse_Right_Key_Dark.png" align="center" height="32"> | Duck/Crouch |
+| <kbd>Middle click</kbd> | <img src=".github/images/Mouse_Middle_Key_Dark.png" align="center" height="32"> | Toggle AI |
 
 ### Touch
 
@@ -75,6 +77,7 @@ Jump over the obstacles and try to get the highest score possible!
 | -- | -- | -- |
 | <kbd>A</kbd> or <kbd>D-Pad Up</kbd> | <img src=".github/images/GamePad_A.png" align="center" height="24"> or <img src=".github/images/GamePad_Up.png" align="center" height="24"> | Jump |
 | <kbd>B</kbd> or <kbd>D-Pad Up</kbd> | <img src=".github/images/GamePad_B.png" align="center" height="24"> or <img src=".github/images/GamePad_Down.png" align="center" height="24"> | Duck/Crouch |
+| <kbd>Start</kbd> | <img src=".github/images/GamePad_Start.png" align="center" height="32"> | Toggle AI |
 
 ## Used in this project
 
