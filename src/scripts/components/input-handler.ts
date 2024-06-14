@@ -8,13 +8,14 @@ import { Key } from "../types/key";
 import { MouseButton } from "../types/mouse-button";
 import { Optional } from "../types/optional.ts";
 import { GamepadButton } from "../types/gamepad-button.ts";
+import { AudioUtils } from "../utils/audio.ts";
 
 export abstract class InputHandler {
 
 	private static invalidated = false;
-	private static readonly VERBOSE_KEYBOARD = false as const;
-	private static readonly VERBOSE_MOUSE = false as const;
-	private static readonly VERBOSE_GAMEPAD = true as const;
+	private static readonly VERBOSE_KEYBOARD = DEBUG && false as const;
+	private static readonly VERBOSE_MOUSE = DEBUG && false as const;
+	private static readonly VERBOSE_GAMEPAD = DEBUG && false as const;
 
 	public static get isDirty() {
 		return this.invalidated;
@@ -352,6 +353,13 @@ export abstract class InputHandler {
 			|| this.isMouseButtonDown(MouseButton.Right)
 			|| this.isGamepadButtonDown(GamepadButton.Down, GamepadButton.B);
 	}
+
+	public static isTogglingAI() {
+		return this.isKeyJustPressed(Key.A)
+			|| this.isMouseButtonJustPressed(MouseButton.Middle)
+			|| this.isGamepadButtonJustPressed(GamepadButton.Start);
+
+	}
 	// #endregion
 
 	public static vibrate() {
@@ -410,6 +418,8 @@ export abstract class InputHandler {
 	}
 
 	public static update() {
+		if (this.invalidated) AudioUtils.setup();
+
 		this.invalidated = false;
 		this.updateKeyboard();
 		this.updateGamepads();
