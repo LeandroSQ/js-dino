@@ -16,6 +16,8 @@ import { StateGameOver } from "./state-game-over";
 import { TextAlign } from "../types/text-align";
 import { Leaderboard } from "../utils/leaderboard";
 import { InputHandler } from "../components/input-handler";
+import { COMDinosaur } from "../models/com-dinosaur";
+import { MouseButton } from "../types/mouse-button";
 
 export class StatePlay extends AState {
 
@@ -68,7 +70,7 @@ export class StatePlay extends AState {
 		this.rawScore = 0;
 		this.rawSpeed = 0;
 
-		this.dino = new Dinosaur(this);
+		this.dino = new COMDinosaur(this);
 		this.ground = new Ground(this);
 		this.obstacles = [];
 
@@ -111,7 +113,7 @@ export class StatePlay extends AState {
 			// I don't want a new variable to track the elapsed time, since this will be only used on the ramp-up phase
 			this.rawSpeed += (2.0 * Math.sqrt(this.rawSpeed) * deltaTime + deltaTime * deltaTime);
 		} else {
-			this.rawSpeed += 0.003 * deltaTime;
+			this.rawSpeed += 0.0057 * deltaTime;
 		}
 	}
 

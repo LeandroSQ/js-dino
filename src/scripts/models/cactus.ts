@@ -25,11 +25,13 @@ const big = [
 export class Cactus extends AObstacle {
 
 	public sprite: Sprite;
+	public isBig: boolean;
 
 	constructor(private state: StatePlay) {
 		super();
 
-		const source = Math.random() < CACTUS_BIG_SPAWN_CHANCE ? big : small;
+		this.isBig = Math.random() < CACTUS_BIG_SPAWN_CHANCE;
+		const source = this.isBig ? big : small;
 		this.sprite = source[Math.floor(Math.random() * source.length)];
 
 		this.velocity.x = BASE_MOVE_SPEED;

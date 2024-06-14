@@ -157,28 +157,28 @@ export abstract class SpriteSheet {
 	} as const;
 
 	public static readonly bigCactus1: Sprite = {
-		x: 652 + 50 * 1,
+		x: 702,
 		y: 2,
 		width: 50,
 		height: 100
 	} as const;
 
 	public static readonly bigCactus2: Sprite = {
-		x: 652 + 50 * 2,
+		x: 752,
 		y: 2,
 		width: 50,
 		height: 100
 	} as const;
 
 	public static readonly bigCactus3: Sprite = {
-		x: 652 + 50 * 3,
+		x: 802,
 		y: 2,
 		width: 50,
 		height: 100
 	} as const;
 
 	public static readonly bigCactus4: Sprite = {
-		x: 652 + 50 * 4,
+		x: 852,
 		y: 2,
 		width: 102,
 		height: 100

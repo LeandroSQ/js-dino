@@ -27,7 +27,7 @@ export class Main {
 	private isDirty = true;
 
 	// Frame
-	private handleAnimationFrameRequest: NodeJS.Timeout | number | undefined = undefined;
+	private handleAnimationFrameRequest = -1;
 	private lastFrameTime = performance.now();
 
 	// Misc
@@ -62,52 +62,63 @@ export class Main {
 
 	// #region Event listeners
 	private async onLoad() {
-		Log.debug("Main", "Window loaded");
+		try {
+			Log.debug("Main", "Window loaded");
 
-		// Attach the canvas element to DOM
-		this.canvas.attachToElement(document.body);
+			// Attach the canvas element to DOM
+			this.canvas.attachToElement(document.body);
 
-		// Setup canvas
-		this.onResize();
+			// Setup canvas
+			this.onResize();
 
-		// Load modules in parallel
-		const modules = [
-			Theme.setup(),
-			FontUtils.setup(),
-			AudioUtils.setup(),
-			ImageUtils.setup(),
-			SpriteSheet.setup(),
-		];
+			// Load modules in parallel
+			const modules = [
+				Theme.setup(),
+				FontUtils.setup(),
+				AudioUtils.setup(),
+				ImageUtils.setup(),
+				SpriteSheet.setup(),
+			];
 
-		// Analytics profiler, only on DEBUG
-		if (DEBUG) {
-			this.analytics = new Analytics(this);
-			modules.push(this.analytics.setup());
+			// Analytics profiler, only on DEBUG
+			if (DEBUG) {
+				this.analytics = new Analytics(this);
+				modules.push(this.analytics.setup());
+			}
+
+			await Promise.all(modules);
+
+			// Setup game state
+			await this.state.setup();
+
+			// Spawn initial clouds
+			this.cloudSpawner.setup();
+
+			// Request the first frame
+			this.requestNextFrame();
+		} catch (e) {
+			Log.error("Main", "Failed to load modules", e);
+			alert(`Failed to load modules. Please refresh the page.${DEBUG ? `Error: ${e}` : ""}`);
 		}
-
-		await Promise.all(modules);
-
-		// Setup game state
-		await this.state.setup();
-
-		// Spawn initial clouds
-		this.cloudSpawner.setup();
-
-		// Request the first frame
-		this.requestNextFrame();
 	}
 
 	private onVisibilityChange(isVisible: boolean) {
 		Log.info("Main", `Window visibility changed to ${isVisible ? "visible" : "hidden"}`);
 
 		if (isVisible) {
-			if (!this.handleAnimationFrameRequest) {
-				this.invalidate();
-				this.lastFrameTime = performance.now();
-
-				// Request the next frame
-				this.requestNextFrame();
+			if (this.handleAnimationFrameRequest >= 0) {
+				if (USE_ANIMATION_FRAME) {
+					cancelAnimationFrame(this.handleAnimationFrameRequest as number);
+				} else {
+					clearInterval(this.handleAnimationFrameRequest as number);
+				}
 			}
+
+			this.invalidate();
+			this.lastFrameTime = performance.now();
+
+			// Request the next frame
+			setTimeout(this.requestNextFrame.bind(this), 0);
 		} else {
 			// Cancel the next frame
 			if (this.handleAnimationFrameRequest) {
@@ -116,7 +127,8 @@ export class Main {
 				} else {
 					clearInterval(this.handleAnimationFrameRequest as number);
 				}
-				this.handleAnimationFrameRequest = undefined;
+
+				this.handleAnimationFrameRequest = -1;
 			}
 		}
 	}
@@ -174,8 +186,8 @@ export class Main {
 		if (USE_ANIMATION_FRAME) {
 			this.handleAnimationFrameRequest = requestAnimationFrame(this.loop.bind(this));
 		} else {
-			if (!this.handleAnimationFrameRequest) {
-				this.handleAnimationFrameRequest = setInterval(() => this.loop(performance.now()), 1000 / SIMULATION_FREQUENCY);
+			if (this.handleAnimationFrameRequest === -1) {
+				this.handleAnimationFrameRequest = setInterval(() => this.loop(performance.now()), 1000 / SIMULATION_FREQUENCY) as unknown as number;
 			}
 		}
 	}

@@ -19,6 +19,9 @@ export abstract class Log {
 	}
 
 	public static error(tag: string, ...args: string[]) {
+		const error = args.find((x: unknown) => x instanceof Error);
+		if (error) console.trace(error);
+
 		this.logColoredText("error", tag, "red", ...args);
 	}
 

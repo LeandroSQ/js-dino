@@ -1,4 +1,4 @@
-import { MOBILE_INTERVAL_FACTOR, OBSTACLE_DOUBLE_SPAWN_CHANCE } from "./../constants";
+import { MOBILE_INTERVAL_FACTOR, OBSTACLE_DOUBLE_SPAWN_CHANCE, OBSTACLE_INTERVAL_FACTOR } from "./../constants";
 import { Cactus } from "./cactus";
 import { BASE_MOVE_SPEED, PTERODACTYL_SPAWN_CHANCE, CACTUS_SPAWN_CHANCE, PTERODACTYL_SPAWN_START_DELAY } from "../constants";
 import { StatePlay } from "../states/state-play";
@@ -14,8 +14,8 @@ export class ObstacleSpawner {
 	public update(deltaTime: number) {
 		this.spawnTimer += deltaTime;
 		const isMobile = window.isMobile();
-		const spawnInterval = (this.state.width / BASE_MOVE_SPEED) * (isMobile ? MOBILE_INTERVAL_FACTOR : 1.0);
-		
+		const spawnInterval = (this.state.width / BASE_MOVE_SPEED) / this.state.speed * (isMobile ? MOBILE_INTERVAL_FACTOR : OBSTACLE_INTERVAL_FACTOR);
+
 		if (this.spawnTimer >= spawnInterval) {
 			if (!isMobile && this.state.main.globalTimer >= PTERODACTYL_SPAWN_START_DELAY && Math.random() <= PTERODACTYL_SPAWN_CHANCE * this.state.speed) {
 				Log.debug("ObstacleSpawner", "Spawning Pterodactyl...");

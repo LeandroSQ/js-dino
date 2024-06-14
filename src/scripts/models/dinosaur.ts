@@ -1,7 +1,5 @@
 import { InputHandler } from "../components/input-handler";
-import { Key } from "../types/key";
-import { MouseButton } from "../types/mouse-button";
-import { DINO_FALL_FORCE, DINO_GRAVITY, DINO_INVULNERABILITY_DURATION, DINO_JUMP_FORCE, DINO_SPRITE_SWITCH_INTERVAL, MARGIN, MOBILE_SPEED_FACTOR } from "../constants";
+import { DINO_FALL_FORCE, DINO_GRAVITY, DINO_INVULNERABILITY_DURATION, DINO_JUMP_FORCE, DINO_LONG_JUMP_SCALE, DINO_REGULAR_JUMP_SCALE, DINO_SPRITE_SWITCH_INTERVAL, MARGIN, MOBILE_SPEED_FACTOR } from "../constants";
 import { StatePlay } from "../states/state-play";
 import { AEntity } from "../types/entity";
 import { Gizmo } from "../utils/gizmo";
@@ -83,10 +81,10 @@ export class Dinosaur extends AEntity {
 			if (this.isGrounded) {
 				if (InputHandler.isShortJumping()) {
 					Log.debug("Input", "Regular jump!");
-					this.jump(1.0);
+					this.jump(DINO_REGULAR_JUMP_SCALE);
 				} else if (InputHandler.isLongJumping()) {
 					Log.debug("Input", "Long jump!");
-					this.jump(1.25);
+					this.jump(DINO_LONG_JUMP_SCALE);
 				}
 			}
 		}
@@ -133,7 +131,7 @@ export class Dinosaur extends AEntity {
 
 		// Velocity Verlet integration
 		this.position.y += this.velocity.y * deltaTime + 0.5 * this.acceleration.y * Math.pow(deltaTime, 2.0);
-		this.velocity.y += this.acceleration.y * deltaTime;
+		this.velocity.y += this.acceleration.y;
 
 
 		this.applyConstraints();
